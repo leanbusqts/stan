@@ -10,6 +10,13 @@ coverage.out
 # Local environment files
 .env
 .env.*
+client_secret.json
+token.json
+stan
+
+# Local Stan credentials
+.config/stan/
+*.oauth.json
 
 # Editor metadata
 .idea/
