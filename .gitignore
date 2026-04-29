@@ -1,0 +1,16 @@
+.DS_Store
+
+# Go build and test artifacts
+.gocache/
+bin/
+coverage.out
+*.coverprofile
+*.test
+
+# Local environment files
+.env
+.env.*
+
+# Editor metadata
+.idea/
+.vscode/
