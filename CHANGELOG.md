@@ -1,6 +1,14 @@
 # CHANGELOG
 
 ## [Unreleased]
+### Added
+- Added `stan tasks show <id-or-title>` to inspect a task with its descendant subtasks and metadata.
+- Added `stan tasks list --verbose` to include subtasks in list output.
+
+### Changed
+- Changed `stan tasks list` to show only top-level tasks by default.
+- Simplified human-readable `stan tasks show` output to only print task notes below each title.
+- Simplified Tasks JSON output to expose only `title`, `notes`, and nested `subtasks` for task detail output.
 
 ## [0.1.0] - 2026-06-12
 ### Added

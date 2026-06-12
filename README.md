@@ -80,16 +80,19 @@ stan auth logout
 stan calendar list
 stan calendar list --days 7
 stan calendar list --start 2026-03-20 --end 2026-03-25
-stan calendar add "Meeting" --when "10:00"
-stan calendar add "Meeting" --when "2026-03-20T10:00" --duration 30m
-stan calendar add "Meeting" --when "2026-03-20T10:00" --end "2026-03-20T11:00"
+stan calendar add --when "10:00" "Meeting"
+stan calendar add --when "2026-03-20T10:00" --duration 30m "Meeting"
+stan calendar add --when "2026-03-20T10:00" --end "2026-03-20T11:00" "Meeting"
 
 stan tasks list
+stan tasks list --verbose
 stan tasks lists
+stan tasks show "Agent47"
+stan tasks show --list "Stan" "Agent47"
 stan tasks add "Buy milk"
-stan tasks add "Buy milk" --list "Personal"
-stan tasks add "Buy milk" --due "2026-03-25"
-stan tasks add "Buy milk" --notes "semi skimmed"
+stan tasks add --list "Personal" "Buy milk"
+stan tasks add --due "2026-03-25" "Buy milk"
+stan tasks add --notes "semi skimmed" "Buy milk"
 ```
 
 Global flags:
@@ -108,12 +111,16 @@ Global flags:
 
 If multiple task lists differ only by case, Stan returns an ambiguity error instead of choosing one at random.
 
-Task output preserves Google Tasks hierarchy and ordering:
+`stan tasks list` shows only top-level tasks by default.
+
+Use `stan tasks list --verbose` to include subtasks. Verbose task output preserves Google Tasks hierarchy and ordering:
 
 - top-level tasks are sorted by Google Tasks `position`
 - subtasks are printed directly below their parent
 - subtasks are indented in human-readable output
 - all API result pages are loaded before sorting
+
+Use `stan tasks show <id-or-title>` to inspect one task together with its subtasks. Human-readable output includes notes when present. Tasks JSON output includes only `title`, `notes`, and nested `subtasks` for `show`.
 
 ## Calendar Behavior
 

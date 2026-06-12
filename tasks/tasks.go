@@ -34,6 +34,19 @@ type Task struct {
 	Depth     int        `json:"depth,omitempty"`
 }
 
+// TaskDetail is a task plus its descendant subtasks.
+type TaskDetail struct {
+	Task     Task         `json:"task"`
+	Subtasks []TaskDetail `json:"subtasks,omitempty"`
+}
+
+// JSONTask is the public JSON shape for task output.
+type JSONTask struct {
+	Title    string     `json:"title"`
+	Notes    string     `json:"notes"`
+	Subtasks []JSONTask `json:"subtasks,omitempty"`
+}
+
 // AddOptions contains supported flags for task creation.
 type AddOptions struct {
 	Title    string
@@ -43,13 +56,31 @@ type AddOptions struct {
 	Now      time.Time
 }
 
+// ShowOptions contains supported flags for task detail lookup.
+type ShowOptions struct {
+	Query    string
+	ListName string
+}
+
+// ListOptions contains supported flags for task listing.
+type ListOptions struct {
+	IncludeSubtasks bool
+}
+
 // List returns tasks from the default Stan task list.
-func List(ctx context.Context, client *http.Client) ([]Task, error) {
+func List(ctx context.Context, client *http.Client, opts ListOptions) ([]Task, error) {
 	listID, err := resolveListID(ctx, client, DefaultListTitle)
 	if err != nil {
 		return nil, err
 	}
-	return listByID(ctx, client, listID)
+	items, err := listByID(ctx, client, listID)
+	if err != nil {
+		return nil, err
+	}
+	if opts.IncludeSubtasks {
+		return items, nil
+	}
+	return topLevelTasks(items), nil
 }
 
 // ListTaskLists returns available Google task lists.
@@ -178,6 +209,34 @@ func listByID(ctx context.Context, client *http.Client, listID string) ([]Task, 
 	return orderTasks(out), nil
 }
 
+// Show returns one task and all of its descendant subtasks.
+func Show(ctx context.Context, client *http.Client, opts ShowOptions) (*TaskDetail, error) {
+	if strings.TrimSpace(opts.Query) == "" {
+		return nil, fmt.Errorf("task query is required")
+	}
+
+	listName := DefaultListTitle
+	if opts.ListName != "" {
+		listName = opts.ListName
+	}
+	listID, err := resolveListID(ctx, client, listName)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := listByID(ctx, client, listID)
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := findTask(items, opts.Query)
+	if err != nil {
+		return nil, err
+	}
+	detail := buildTaskDetail(items, root.ID)
+	return &detail, nil
+}
+
 func fromGoogleTask(item *gtasks.Task) (*Task, error) {
 	var due *time.Time
 	if item.Due != "" {
@@ -248,6 +307,86 @@ func orderTasks(items []Task) []Task {
 		ordered = append(ordered, item)
 	}
 	return ordered
+}
+
+func topLevelTasks(items []Task) []Task {
+	out := make([]Task, 0, len(items))
+	for _, item := range items {
+		if item.Depth == 0 {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func findTask(items []Task, query string) (Task, error) {
+	query = strings.TrimSpace(query)
+	for _, item := range items {
+		if item.ID == query {
+			return item, nil
+		}
+	}
+
+	matches := make([]Task, 0)
+	for _, item := range items {
+		if strings.EqualFold(item.Title, query) {
+			matches = append(matches, item)
+		}
+	}
+	switch len(matches) {
+	case 0:
+		return Task{}, fmt.Errorf("task %q not found", query)
+	case 1:
+		return matches[0], nil
+	default:
+		return Task{}, fmt.Errorf("multiple tasks named %q; use the task id", query)
+	}
+}
+
+func buildTaskDetail(items []Task, rootID string) TaskDetail {
+	byParent := make(map[string][]Task)
+	byID := make(map[string]Task)
+	for _, item := range items {
+		byParent[item.Parent] = append(byParent[item.Parent], item)
+		byID[item.ID] = item
+	}
+
+	var build func(Task, int) TaskDetail
+	build = func(item Task, depth int) TaskDetail {
+		item.Depth = depth
+		detail := TaskDetail{Task: item}
+		for _, child := range byParent[item.ID] {
+			detail.Subtasks = append(detail.Subtasks, build(child, depth+1))
+		}
+		return detail
+	}
+
+	return build(byID[rootID], 0)
+}
+
+// ToJSONTasks converts internal task records to the public JSON shape.
+func ToJSONTasks(items []Task) []JSONTask {
+	out := make([]JSONTask, 0, len(items))
+	for _, item := range items {
+		out = append(out, JSONTask{
+			Title: item.Title,
+			Notes: item.Notes,
+		})
+	}
+	return out
+}
+
+// ToJSONTaskDetail converts a task tree to the public JSON shape.
+func ToJSONTaskDetail(detail *TaskDetail) JSONTask {
+	out := JSONTask{
+		Title: detail.Task.Title,
+		Notes: detail.Task.Notes,
+	}
+	for _, subtask := range detail.Subtasks {
+		child := subtask
+		out.Subtasks = append(out.Subtasks, ToJSONTaskDetail(&child))
+	}
+	return out
 }
 
 func withRetry(fn func() error) error {

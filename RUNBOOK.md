@@ -94,9 +94,9 @@ List events:
 Create events:
 
 ```bash
-./stan calendar add "Meeting" --when "10:00"
-./stan calendar add "Meeting" --when "2026-03-20T10:00" --duration 30m
-./stan calendar add "Meeting" --when "2026-03-20T10:00" --end "2026-03-20T11:00"
+./stan calendar add --when "10:00" "Meeting"
+./stan calendar add --when "2026-03-20T10:00" --duration 30m "Meeting"
+./stan calendar add --when "2026-03-20T10:00" --end "2026-03-20T11:00" "Meeting"
 ```
 
 ## Tasks Operations
@@ -111,6 +111,15 @@ List the default Stan task list:
 
 ```bash
 ./stan tasks list
+./stan tasks list --verbose
+```
+
+Show one task with its subtasks and metadata:
+
+```bash
+./stan tasks show "Agent47"
+./stan tasks show --json "Agent47"
+./stan tasks show --list "Stan" "Agent47"
 ```
 
 Default behavior:
@@ -118,15 +127,18 @@ Default behavior:
 - resolves a task list titled `Stan`
 - comparison is case-insensitive
 - duplicate case-insensitive matches fail as ambiguous
-- output follows Google Tasks hierarchy and `position` ordering
+- `tasks list` shows only top-level tasks by default
+- `tasks list --verbose` includes subtasks and follows Google Tasks hierarchy and `position` ordering
+- `tasks show` accepts either an exact task ID or an exact case-insensitive task title
+- if multiple tasks share the same title, use the task ID
 
 Create tasks:
 
 ```bash
 ./stan tasks add "Buy milk"
-./stan tasks add "Buy milk" --due "2026-03-25"
-./stan tasks add "Buy milk" --notes "semi skimmed"
-./stan tasks add "Buy milk" --list "Personal"
+./stan tasks add --due "2026-03-25" "Buy milk"
+./stan tasks add --notes "semi skimmed" "Buy milk"
+./stan tasks add --list "Personal" "Buy milk"
 ```
 
 ## Output Modes
@@ -141,8 +153,12 @@ JSON:
 
 ```bash
 ./stan tasks list --json
+./stan tasks list --verbose --json
+./stan tasks show --json "Agent47"
 ./stan calendar list --json
 ```
+
+Tasks JSON output exposes only `title` and `notes` for each task. `tasks show --json` also includes nested `subtasks`.
 
 Quiet:
 
@@ -193,18 +209,3 @@ Try:
 ./stan auth logout
 ./stan auth login
 ```
-
-## Release Checklist
-
-1. Update `README.md`, `RUNBOOK.md`, `SNAPSHOT.md`, `SPEC.md`, `CHANGELOG.md`, and `VERSION`.
-2. Run:
-
-```bash
-GOCACHE=/private/tmp/stan-gocache go test ./...
-GOCACHE=/private/tmp/stan-gocache go build -o stan .
-```
-
-3. Review the staged diff.
-4. Commit.
-5. Tag the release as `vX.Y.Z`.
-6. Push the branch and tag.

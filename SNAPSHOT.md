@@ -14,9 +14,9 @@
 - **Token storage:** keychain-first storage with `~/.config/stan/token.json` fallback
 - **Token refresh:** OAuth clients auto-refresh and save updated tokens
 - **Calendar:** supports event listing from primary calendar and event creation
-- **Tasks:** supports task-list discovery, task listing, and task creation
+- **Tasks:** supports task-list discovery, task listing, task detail lookup, and task creation
 - **Default task list:** resolves a Google Tasks list titled `Stan`, case-insensitively
-- **Task ordering:** preserves Google Tasks hierarchy and sibling ordering through `parent` and `position`
+- **Task listing:** default list output shows top-level tasks only; `--verbose` includes subtasks in Google Tasks hierarchy and sibling order
 - **Output:** human-readable default plus JSON, quiet, and no-color modes
 - **Version:** `0.1.0`
 
@@ -26,10 +26,11 @@
 - `stan auth status`
 - `stan auth logout`
 - `stan calendar list [--days N] [--start YYYY-MM-DD] [--end YYYY-MM-DD]`
-- `stan calendar add "Meeting" --when "10:00" [--duration 30m] [--end 2026-03-20T10:30]`
-- `stan tasks list`
+- `stan calendar add --when "10:00" [--duration 30m] [--end 2026-03-20T10:30] "Meeting"`
+- `stan tasks list [--verbose]`
 - `stan tasks lists`
-- `stan tasks add "Buy milk" [--list Personal] [--due 2026-03-25] [--notes "..."]`
+- `stan tasks show [--list Stan] "Agent47"`
+- `stan tasks add [--list Personal] [--due 2026-03-25] [--notes "..."] "Buy milk"`
 
 Global flags:
 
@@ -70,4 +71,4 @@ Global flags:
 - `GOCACHE=/private/tmp/stan-gocache go test ./...` passed on June 12, 2026.
 - `GOCACHE=/private/tmp/stan-gocache go build -o stan .` passed on June 12, 2026.
 - Manual auth regression target: `./stan auth login` should complete after browser consent and `./stan auth status` should show a logged-in user.
-- Manual tasks regression target: `./stan tasks list` should print `Tasks (Stan)` and preserve the visual order and indentation shown in Google Tasks.
+- Manual tasks regression target: `./stan tasks list` should print only top-level `Tasks (Stan)`, while `./stan tasks list --verbose` should preserve the visual order and indentation shown in Google Tasks.

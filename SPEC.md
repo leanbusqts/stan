@@ -114,7 +114,7 @@ Public commands:
 
 ```bash
 stan calendar list [--days N] [--start YYYY-MM-DD] [--end YYYY-MM-DD]
-stan calendar add "Meeting" --when "10:00" [--duration 30m] [--end 2026-03-20T10:30]
+stan calendar add --when "10:00" [--duration 30m] [--end 2026-03-20T10:30] "Meeting"
 ```
 
 Expected behavior:
@@ -136,9 +136,10 @@ Supported date/time input:
 Public commands:
 
 ```bash
-stan tasks list
+stan tasks list [--verbose]
 stan tasks lists
-stan tasks add "Buy milk" [--list Personal] [--due 2026-03-25] [--notes "..."]
+stan tasks show [--list Stan] "Agent47"
+stan tasks add [--list Personal] [--due 2026-03-25] [--notes "..."] "Buy milk"
 ```
 
 Default list behavior:
@@ -153,8 +154,18 @@ Task listing behavior:
 - load all available result pages
 - preserve Google Tasks sibling order through the `position` field
 - preserve hierarchy through the `parent` field
-- print subtasks under their parent with indentation in human-readable output
+- `tasks list` returns only top-level tasks by default
+- `tasks list --verbose` returns subtasks under their parent with indentation in human-readable output
 - treat tasks with missing parents as top-level tasks
+
+Task detail behavior:
+
+- `tasks show <id-or-title>` returns one task plus all descendant subtasks
+- lookup prefers exact task ID matches before title matches
+- title matching is exact and case-insensitive
+- duplicate title matches are rejected as ambiguous
+- human-readable output includes notes when present
+- JSON output exposes only `title` and `notes` for each task and uses nested `subtasks` for descendants
 
 Task creation behavior:
 
@@ -173,6 +184,7 @@ Supported user-facing commands:
 - `stan calendar add`
 - `stan tasks list`
 - `stan tasks lists`
+- `stan tasks show`
 - `stan tasks add`
 
 Supported global flags:

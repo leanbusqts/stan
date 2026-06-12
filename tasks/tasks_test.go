@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -101,6 +102,106 @@ func TestOrderTasksTreatsMissingParentsAsRoots(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("order mismatch: got %v want %v", got, want)
 		}
+	}
+}
+
+func TestTopLevelTasksFiltersSubtasks(t *testing.T) {
+	items := []Task{
+		{ID: "root", Title: "Root", Depth: 0},
+		{ID: "child", Title: "Child", Depth: 1},
+		{ID: "orphan", Title: "Orphan", Depth: 0},
+	}
+
+	got := topLevelTasks(items)
+	if len(got) != 2 || got[0].ID != "root" || got[1].ID != "orphan" {
+		t.Fatalf("topLevelTasks mismatch: %+v", got)
+	}
+}
+
+func TestFindTaskPrefersIDThenCaseInsensitiveTitle(t *testing.T) {
+	items := []Task{
+		{ID: "task-1", Title: "Agent47"},
+		{ID: "Agent47", Title: "Different"},
+	}
+
+	got, err := findTask(items, "Agent47")
+	if err != nil {
+		t.Fatalf("findTask by id returned error: %v", err)
+	}
+	if got.ID != "Agent47" {
+		t.Fatalf("findTask id mismatch: %+v", got)
+	}
+
+	got, err = findTask(items, "agent47")
+	if err != nil {
+		t.Fatalf("findTask by title returned error: %v", err)
+	}
+	if got.ID != "task-1" {
+		t.Fatalf("findTask title mismatch: %+v", got)
+	}
+}
+
+func TestFindTaskRejectsDuplicateTitles(t *testing.T) {
+	_, err := findTask([]Task{
+		{ID: "task-1", Title: "Agent47"},
+		{ID: "task-2", Title: "agent47"},
+	}, "AGENT47")
+	if err == nil {
+		t.Fatal("expected duplicate title error")
+	}
+}
+
+func TestBuildTaskDetailIncludesDescendants(t *testing.T) {
+	items := orderTasks([]Task{
+		{ID: "root", Title: "Root", Position: "1"},
+		{ID: "child", Title: "Child", Parent: "root", Position: "1"},
+		{ID: "grandchild", Title: "Grandchild", Parent: "child", Position: "1"},
+		{ID: "sibling", Title: "Sibling", Position: "2"},
+	})
+
+	detail := buildTaskDetail(items, "root")
+	if detail.Task.ID != "root" {
+		t.Fatalf("root mismatch: %+v", detail)
+	}
+	if len(detail.Subtasks) != 1 || detail.Subtasks[0].Task.ID != "child" {
+		t.Fatalf("child mismatch: %+v", detail.Subtasks)
+	}
+	if len(detail.Subtasks[0].Subtasks) != 1 || detail.Subtasks[0].Subtasks[0].Task.ID != "grandchild" {
+		t.Fatalf("grandchild mismatch: %+v", detail.Subtasks[0].Subtasks)
+	}
+	if detail.Task.Depth != 0 || detail.Subtasks[0].Task.Depth != 1 || detail.Subtasks[0].Subtasks[0].Task.Depth != 2 {
+		t.Fatalf("relative depth mismatch: %+v", detail)
+	}
+}
+
+func TestToJSONTasksKeepsOnlyPublicFields(t *testing.T) {
+	got := ToJSONTasks([]Task{
+		{ID: "task-1", Title: "Root", Notes: "note", Completed: true, Parent: "parent", Position: "1", Depth: 1},
+	})
+	raw, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshal JSON tasks: %v", err)
+	}
+	if string(raw) != `[{"title":"Root","notes":"note"}]` {
+		t.Fatalf("JSON tasks mismatch: %s", raw)
+	}
+}
+
+func TestToJSONTaskDetailKeepsOnlyPublicFields(t *testing.T) {
+	detail := &TaskDetail{
+		Task: Task{ID: "root", Title: "Root", Notes: "root note"},
+		Subtasks: []TaskDetail{
+			{Task: Task{ID: "child", Title: "Child", Completed: true}},
+		},
+	}
+
+	raw, err := json.Marshal(ToJSONTaskDetail(detail))
+	if err != nil {
+		t.Fatalf("marshal JSON task detail: %v", err)
+	}
+	want := `{"title":"Root","notes":"root note","subtasks":[{"title":"Child","notes":""}]}`
+	if string(raw) != want {
+		t.Fatalf("JSON task detail mismatch: got %s want %s", raw, want)
 	}
 }
 

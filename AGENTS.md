@@ -30,7 +30,8 @@ Read what applies before acting:
   - In template-source repositories such as `agent47` itself, read the equivalent files under `templates/base/rules/` and the relevant project bundle rules under `templates/bundles/*/rules/`
   - For shell-heavy repositories, include the shell security rules when present
 - `specs/spec.yml` when the task is non-trivial, plan-driven, or spec-driven
-- In this repository, root `SPEC.md` describes the current-state product spec for `agent47` itself; do not treat it as the default place to draft a new feature spec or implementation plan
+- `RELEASING.md` when the task asks to generate, cut, publish, tag, or push a release
+- In this repository, root `SPEC.md` describes the current-state product spec for `stan` itself; do not treat it as the default place to draft a new feature spec or implementation plan
 - Relevant code and tests
 - `skills/AVAILABLE_SKILLS.xml` and the selected `skills/*/SKILL.md` when skills are in use
 

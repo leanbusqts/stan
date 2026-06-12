@@ -189,18 +189,19 @@ func runTasks(ctx context.Context, mgr *auth.Manager, args []string, output inte
 		}
 		fs := flag.NewFlagSet("tasks list", flag.ContinueOnError)
 		fs.SetOutput(os.Stderr)
+		verbose := fs.Bool("verbose", false, "Include subtasks")
 		if err := fs.Parse(args[1:]); err != nil {
 			return err
 		}
 		if fs.NArg() != 0 {
 			return fmt.Errorf("tasks list does not accept positional arguments")
 		}
-		items, err := tasks.List(ctx, client)
+		items, err := tasks.List(ctx, client, tasks.ListOptions{IncludeSubtasks: *verbose})
 		if err != nil {
 			return err
 		}
 		if output.JSON {
-			return internal.PrintJSON(os.Stdout, items)
+			return internal.PrintJSON(os.Stdout, tasks.ToJSONTasks(items))
 		}
 		printTasks(items, tasks.DefaultListTitle, output)
 		return nil
@@ -229,6 +230,36 @@ func runTasks(ctx context.Context, mgr *auth.Manager, args []string, output inte
 			fmt.Fprintf(os.Stdout, "%s\t%s\n", list.ID, list.Title)
 		}
 		return nil
+	case "show":
+		client, err := mgr.AuthorizedHTTPClient(ctx)
+		if err != nil {
+			return err
+		}
+		fs := flag.NewFlagSet("tasks show", flag.ContinueOnError)
+		fs.SetOutput(os.Stderr)
+		listName := fs.String("list", "", "Task list name")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		if fs.NArg() != 1 {
+			return errors.New(`tasks show requires exactly one task id or title, e.g. stan tasks show "Agent47"`)
+		}
+		detail, err := tasks.Show(ctx, client, tasks.ShowOptions{
+			Query:    fs.Arg(0),
+			ListName: *listName,
+		})
+		if err != nil {
+			return err
+		}
+		if output.JSON {
+			return internal.PrintJSON(os.Stdout, tasks.ToJSONTaskDetail(detail))
+		}
+		if output.Quiet {
+			fmt.Fprintln(os.Stdout, internal.CompactLine(detail.Task.ID, detail.Task.Title))
+			return nil
+		}
+		printTaskDetail(detail, output)
+		return nil
 	case "add":
 		client, err := mgr.AuthorizedHTTPClient(ctx)
 		if err != nil {
@@ -256,7 +287,7 @@ func runTasks(ctx context.Context, mgr *auth.Manager, args []string, output inte
 			return err
 		}
 		if output.JSON {
-			return internal.PrintJSON(os.Stdout, item)
+			return internal.PrintJSON(os.Stdout, tasks.ToJSONTasks([]tasks.Task{*item})[0])
 		}
 		if output.Quiet {
 			fmt.Fprintln(os.Stdout, internal.CompactLine(item.ID, item.Title))
@@ -345,13 +376,48 @@ func printTasks(items []tasks.Task, listName string, output internal.OutputOptio
 	}
 }
 
+func printTaskDetail(detail *tasks.TaskDetail, output internal.OutputOptions) {
+	now := time.Now()
+	printTaskDetailNode(*detail, 0, output, now)
+}
+
+func printTaskDetailNode(detail tasks.TaskDetail, depth int, output internal.OutputOptions, now time.Time) {
+	item := detail.Task
+	checkbox := "[ ]"
+	if item.Completed {
+		checkbox = "[x]"
+	}
+	indent := strings.Repeat("  ", depth)
+	line := fmt.Sprintf("%s%s %s", indent, checkbox, item.Title)
+	fmt.Fprintln(os.Stdout, internal.TaskLineColor(!output.NoColor, item.Completed, item.Due, now, line))
+	if item.Notes != "" {
+		printTaskField(indent, "notes", item.Notes)
+	}
+	for _, subtask := range detail.Subtasks {
+		fmt.Fprintln(os.Stdout)
+		printTaskDetailNode(subtask, depth+1, output, now)
+	}
+}
+
+func printTaskField(indent string, name string, value string) {
+	prefix := indent + "  " + name + ": "
+	lines := strings.Split(value, "\n")
+	for i, line := range lines {
+		if i == 0 {
+			fmt.Fprintln(os.Stdout, prefix+line)
+			continue
+		}
+		fmt.Fprintln(os.Stdout, strings.Repeat(" ", len(prefix))+line)
+	}
+}
+
 func printRootHelp() {
 	fmt.Println("Stan CLI")
 	fmt.Println("")
 	fmt.Println("Usage:")
 	fmt.Println("  stan auth <login|status|logout>")
 	fmt.Println("  stan calendar <list|add>")
-	fmt.Println("  stan tasks <list|lists|add>")
+	fmt.Println("  stan tasks <list|lists|show|add>")
 	fmt.Println("")
 	fmt.Println("Global flags:")
 	fmt.Println("  --json")
@@ -366,14 +432,15 @@ func printAuthHelp() {
 func printCalendarHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  stan calendar list [--days N] [--start YYYY-MM-DD] [--end YYYY-MM-DD]")
-	fmt.Println(`  stan calendar add "Meeting" --when "10:00" [--duration 30m] [--end 2026-03-20T10:30]`)
+	fmt.Println(`  stan calendar add --when "10:00" [--duration 30m] [--end 2026-03-20T10:30] "Meeting"`)
 }
 
 func printTasksHelp() {
 	fmt.Println("Usage:")
-	fmt.Println("  stan tasks list")
+	fmt.Println("  stan tasks list [--verbose]")
 	fmt.Println("  stan tasks lists")
-	fmt.Println(`  stan tasks add "Buy milk" [--list Personal] [--due 2026-03-25] [--notes "..."]`)
+	fmt.Println(`  stan tasks show [--list Stan] "Agent47"`)
+	fmt.Println(`  stan tasks add [--list Personal] [--due 2026-03-25] [--notes "..."] "Buy milk"`)
 }
 
 func init() { flag.CommandLine.SetOutput(os.Stderr) }
