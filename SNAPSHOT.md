@@ -8,7 +8,7 @@
 
 ## 2. Current Status
 
-- **Runtime:** single Go CLI entrypoint in `main.go`
+- **Runtime:** single Go CLI entrypoint in `main.go`, with embedded version reporting
 - **Parsing:** standard library `flag` with command-specific `FlagSet` routing
 - **Authentication:** OAuth Authorization Code Flow with local callback, PKCE S256, browser launch, and manual redirect fallback
 - **Token storage:** keychain-first storage with `~/.config/stan/token.json` fallback
@@ -25,6 +25,9 @@
 - `stan auth login`
 - `stan auth status`
 - `stan auth logout`
+- `stan version`
+- `stan doctor`
+- `stan help`
 - `stan calendar list [--days N] [--start YYYY-MM-DD] [--end YYYY-MM-DD]`
 - `stan calendar add --when "10:00" [--duration 30m] [--end 2026-03-20T10:30] "Meeting"`
 - `stan tasks list [--verbose]`

@@ -10,27 +10,51 @@ It focuses on a small, scriptable command surface:
 - human-readable output by default
 - JSON and quiet output for scripts
 
-## Quickstart
+## Getting Started From Source
 
-Build the local binary:
+Clone and build from this repository:
 
 ```bash
+git clone https://github.com/leanbusqts/stan.git
+cd stan
 go build -o stan .
+./stan help
 ```
 
-Place Google Desktop OAuth credentials in one of the supported locations:
+Create Google OAuth credentials:
 
-```text
-./client_secret.json
-~/.config/stan/client_secret.json
+1. Open Google Cloud Console.
+2. Create or select a project.
+3. Enable Google Calendar API and Google Tasks API.
+4. Create OAuth client credentials of type `Desktop app`.
+5. Download the JSON file and save it as Stan's local credentials:
+
+```bash
+mkdir -p ~/.config/stan
+mv ~/Downloads/client_secret*.json ~/.config/stan/client_secret.json
 ```
 
-Log in:
+Then log in:
 
 ```bash
 ./stan auth login
 ./stan auth status
 ```
+
+Check local setup:
+
+```bash
+./stan version
+./stan doctor
+```
+
+Stan also supports keeping credentials in the repository working directory for local experiments:
+
+```text
+./client_secret.json
+```
+
+Do not commit `client_secret.json`.
 
 List tasks from the default Stan task list:
 
@@ -42,6 +66,16 @@ List upcoming calendar events:
 
 ```bash
 ./stan calendar list
+```
+
+## Quickstart For Existing Checkouts
+
+If you already have the repo locally:
+
+```bash
+go build -o stan .
+./stan help
+./stan doctor
 ```
 
 ## Google OAuth Setup
@@ -73,6 +107,10 @@ The file fallback uses atomic writes and `0600` permissions. Refresh tokens are 
 ## Public Commands
 
 ```bash
+stan version
+stan doctor
+stan help
+
 stan auth login
 stan auth status
 stan auth logout

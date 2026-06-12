@@ -1,6 +1,11 @@
 # CHANGELOG
 
 ## [Unreleased]
+### Added
+- Added `stan version`, `stan doctor`, and explicit root `stan help` usage.
+
+### Changed
+- Expanded source checkout onboarding with concrete build, credential placement, and login commands.
 
 ## [0.1.1] - 2026-06-12
 ### Added

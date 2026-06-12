@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -14,6 +15,9 @@ import (
 	"stan/internal"
 	"stan/tasks"
 )
+
+//go:embed VERSION
+var embeddedVersion string
 
 func main() {
 	if err := run(context.Background(), os.Args[1:]); err != nil {
@@ -40,6 +44,16 @@ func run(ctx context.Context, args []string) error {
 	authManager := auth.NewManager(cfg)
 
 	switch filteredArgs[0] {
+	case "version":
+		if len(filteredArgs) > 1 {
+			return fmt.Errorf("version does not accept extra arguments")
+		}
+		return runVersion(output)
+	case "doctor":
+		if len(filteredArgs) > 1 {
+			return fmt.Errorf("doctor does not accept extra arguments")
+		}
+		return runDoctor(ctx, cfg, authManager, output)
 	case "auth":
 		return runAuth(ctx, authManager, filteredArgs[1:], output)
 	case "calendar":
@@ -52,6 +66,92 @@ func run(ctx context.Context, args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", filteredArgs[0])
 	}
+}
+
+type versionInfo struct {
+	Version string `json:"version"`
+}
+
+type doctorInfo struct {
+	Version         string               `json:"version"`
+	Credentials     string               `json:"credentials"`
+	CredentialsPath string               `json:"credentials_path,omitempty"`
+	ConfigDir       string               `json:"config_dir"`
+	ConfigDirPath   string               `json:"config_dir_path"`
+	Token           string               `json:"token"`
+	TokenEmail      string               `json:"token_email,omitempty"`
+	TokenStorage    internal.StorageKind `json:"token_storage,omitempty"`
+}
+
+func currentVersion() string {
+	version := strings.TrimSpace(embeddedVersion)
+	if version == "" {
+		return "unknown"
+	}
+	return version
+}
+
+func runVersion(output internal.OutputOptions) error {
+	info := versionInfo{Version: currentVersion()}
+	if output.JSON {
+		return internal.PrintJSON(os.Stdout, info)
+	}
+	fmt.Fprintln(os.Stdout, info.Version)
+	return nil
+}
+
+func runDoctor(ctx context.Context, cfg internal.Config, mgr *auth.Manager, output internal.OutputOptions) error {
+	info := doctorInfo{
+		Version:       currentVersion(),
+		ConfigDirPath: cfg.ConfigDir,
+	}
+
+	if cfg.CredentialsPath == "" {
+		info.Credentials = "missing"
+	} else {
+		info.Credentials = "found"
+		info.CredentialsPath = cfg.CredentialsPath
+	}
+
+	if _, err := os.Stat(cfg.ConfigDir); err == nil {
+		info.ConfigDir = "found"
+	} else if errors.Is(err, os.ErrNotExist) {
+		info.ConfigDir = "missing"
+	} else {
+		info.ConfigDir = "error: " + err.Error()
+	}
+
+	status, err := mgr.Status(ctx)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err != nil {
+		info.Token = err.Error()
+	} else if status == nil {
+		info.Token = "unknown"
+	} else {
+		info.Token = "found"
+		info.TokenEmail = status.Email
+		info.TokenStorage = status.Storage
+	}
+
+	if output.JSON {
+		return internal.PrintJSON(os.Stdout, info)
+	}
+	fmt.Fprintln(os.Stdout, "Stan doctor")
+	fmt.Fprintf(os.Stdout, "Version: %s\n", info.Version)
+	if info.CredentialsPath == "" {
+		fmt.Fprintf(os.Stdout, "Credentials: %s\n", info.Credentials)
+	} else {
+		fmt.Fprintf(os.Stdout, "Credentials: %s (%s)\n", info.Credentials, info.CredentialsPath)
+	}
+	fmt.Fprintf(os.Stdout, "Config dir: %s (%s)\n", info.ConfigDir, info.ConfigDirPath)
+	if info.TokenEmail == "" {
+		fmt.Fprintf(os.Stdout, "Token: %s\n", info.Token)
+	} else {
+		fmt.Fprintf(os.Stdout, "Token: %s (%s, %s)\n", info.Token, info.TokenEmail, info.TokenStorage)
+	}
+	return nil
 }
 
 func runAuth(ctx context.Context, mgr *auth.Manager, args []string, output internal.OutputOptions) error {
@@ -415,6 +515,9 @@ func printRootHelp() {
 	fmt.Println("Stan CLI")
 	fmt.Println("")
 	fmt.Println("Usage:")
+	fmt.Println("  stan version")
+	fmt.Println("  stan doctor")
+	fmt.Println("  stan help")
 	fmt.Println("  stan auth <login|status|logout>")
 	fmt.Println("  stan calendar <list|add>")
 	fmt.Println("  stan tasks <list|lists|show|add>")

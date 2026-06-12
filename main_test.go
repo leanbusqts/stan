@@ -32,6 +32,28 @@ func TestExtractGlobalFlagsRejectsConflicts(t *testing.T) {
 	}
 }
 
+func TestVersionCommand(t *testing.T) {
+	out := captureStdout(t, func() {
+		if err := run(t.Context(), []string{"version"}); err != nil {
+			t.Fatalf("run version returned error: %v", err)
+		}
+	})
+	if strings.TrimSpace(out) != currentVersion() {
+		t.Fatalf("version output mismatch: %q", out)
+	}
+}
+
+func TestRootHelpIncludesUtilityCommands(t *testing.T) {
+	out := captureStdout(t, func() {
+		printRootHelp()
+	})
+	for _, want := range []string{"stan version", "stan doctor", "stan help"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("root help missing %q: %q", want, out)
+		}
+	}
+}
+
 func TestPrintCalendarEventsAndTasks(t *testing.T) {
 	calendarOut := captureStdout(t, func() {
 		printCalendarEvents([]calendar.Event{

@@ -16,6 +16,21 @@ If the default Go build cache is not writable on macOS:
 GOCACHE=/private/tmp/stan-gocache go build -o stan .
 ```
 
+Check the built CLI version:
+
+```bash
+./stan version
+```
+
+Run local diagnostics:
+
+```bash
+./stan doctor
+./stan doctor --json
+```
+
+`doctor` checks the embedded version, credentials location, config directory, and local token state. It does not call Google APIs.
+
 ## Test
 
 Run the full suite:
@@ -37,9 +52,14 @@ GOCACHE=/private/tmp/stan-gocache go test ./...
 3. Enable Google Calendar API and Google Tasks API.
 4. Create OAuth client credentials of type `Desktop app`.
 5. Download the credentials JSON.
-6. Save it as either:
-   - `./client_secret.json`
-   - `~/.config/stan/client_secret.json`
+6. Save it as Stan's local credentials:
+
+```bash
+mkdir -p ~/.config/stan
+mv ~/Downloads/client_secret*.json ~/.config/stan/client_secret.json
+```
+
+Stan also supports `./client_secret.json` in the repository working directory for local experiments.
 
 Do not commit `client_secret.json`.
 

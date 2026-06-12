@@ -13,6 +13,8 @@ This root `SPEC.md` describes the current product contract and technical behavio
 
 Stan provides:
 
+- embedded version reporting
+- local diagnostic checks
 - Google OAuth login for Desktop App credentials
 - secure token persistence through keychain-first storage with file fallback
 - Google Calendar event listing and event creation
@@ -59,7 +61,23 @@ Expected outcome:
 
 - produce a local `stan` executable from the current checkout
 
-### 5.2 Authenticate
+### 5.2 Utility commands
+
+Public commands:
+
+```bash
+stan version
+stan doctor
+stan help
+```
+
+Expected behavior:
+
+- `version` prints the embedded release version from `VERSION`
+- `doctor` reports version, credentials state, config directory state, and local token state without calling Google APIs
+- `help` prints the root command surface
+
+### 5.3 Authenticate
 
 Public commands:
 
@@ -87,7 +105,7 @@ OAuth scopes:
 - `openid`
 - `email`
 
-### 5.3 Token Storage
+### 5.4 Token Storage
 
 Storage priority:
 
@@ -108,7 +126,7 @@ Refresh behavior:
 - missing refresh tokens retain the previously stored refresh token when possible
 - `invalid_grant`, `400`, and `401` auth failures map to the user-facing expired-session message
 
-### 5.4 Calendar
+### 5.5 Calendar
 
 Public commands:
 
@@ -131,7 +149,7 @@ Supported date/time input:
 - date-only
 - time-only interpreted in the local timezone
 
-### 5.5 Tasks
+### 5.6 Tasks
 
 Public commands:
 
@@ -177,6 +195,9 @@ Task creation behavior:
 
 Supported user-facing commands:
 
+- `stan version`
+- `stan doctor`
+- `stan help`
 - `stan auth login`
 - `stan auth status`
 - `stan auth logout`
