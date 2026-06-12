@@ -18,7 +18,7 @@
 - **Default task list:** resolves a Google Tasks list titled `Stan`, case-insensitively
 - **Task listing:** default list output shows top-level tasks only; `--verbose` includes subtasks in Google Tasks hierarchy and sibling order
 - **Output:** human-readable default plus JSON, quiet, and no-color modes
-- **Version:** `0.1.0`
+- **Version:** `0.1.1`
 
 ## 3. Current Commands
 

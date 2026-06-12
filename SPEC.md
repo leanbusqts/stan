@@ -280,5 +280,5 @@ GOCACHE=/private/tmp/stan-gocache go build -o stan .
 
 ## 12. Current Release
 
-- Version: `0.1.0`
+- Version: `0.1.1`
 - Release date: 2026-06-12
