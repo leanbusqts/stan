@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## [Unreleased]
+
+## [0.1.2] - 2026-06-12
 ### Added
 - Added `stan version`, `stan doctor`, and explicit root `stan help` usage.
 
