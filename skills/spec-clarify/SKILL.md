@@ -1,6 +1,14 @@
 ---
 name: spec-clarify
 description: Ask targeted questions to clarify scope, edge cases, and acceptance before coding.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: clarification
+  tags: [requirements, scope, ambiguity]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: core
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Spec Clarify

@@ -1,6 +1,14 @@
 ---
 name: analyze
 description: Understand the current state, flows, and issues before making changes.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: analysis
+  tags: [analysis, discovery, diagnostics]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: core
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Analyze

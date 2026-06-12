@@ -27,7 +27,7 @@ If two items at the same level conflict, stop and ask.
 Read what applies before acting:
 - `AGENTS.md`
 - Relevant security and stack rules under `rules/`
-  - In template-source repositories such as `agent47` itself, read the equivalent files under `templates/rules/`
+  - In template-source repositories such as `agent47` itself, read the equivalent files under `templates/base/rules/` and the relevant project bundle rules under `templates/bundles/*/rules/`
   - For shell-heavy repositories, include the shell security rules when present
 - `specs/spec.yml` when the task is non-trivial, plan-driven, or spec-driven
 - In this repository, root `SPEC.md` describes the current-state product spec for `agent47` itself; do not treat it as the default place to draft a new feature spec or implementation plan

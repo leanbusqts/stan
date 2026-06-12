@@ -1,6 +1,14 @@
 ---
 name: troubleshoot
 description: Isolate root causes and propose targeted fixes with clear validation steps.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: troubleshooting
+  tags: [debugging, incident, root-cause]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: core
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Troubleshoot

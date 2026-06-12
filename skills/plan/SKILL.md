@@ -1,6 +1,14 @@
 ---
 name: plan
 description: Create a concise plan with risks and checkpoints before executing any changes.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: planning
+  tags: [planning, checkpoints, risk]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: core
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Plan

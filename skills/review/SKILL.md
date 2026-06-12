@@ -1,6 +1,14 @@
 ---
 name: review
 description: Inspect changes for correctness, risks, and regressions before accepting them.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: review
+  tags: [review, regression, correctness]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: core
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Review

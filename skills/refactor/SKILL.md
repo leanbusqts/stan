@@ -1,6 +1,14 @@
 ---
 name: refactor
 description: Improve structure and clarity without changing externally visible behavior.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: refactor
+  tags: [cleanup, structure, maintainability]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: suggested
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Refactor

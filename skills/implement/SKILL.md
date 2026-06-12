@@ -1,6 +1,14 @@
 ---
 name: implement
 description: Deliver a scoped change that meets the stated requirements with minimal surface area.
+compatibility: Designed for skills-compatible coding agents.
+metadata:
+  category: implementation
+  tags: [implementation, feature, delivery]
+  applies_to: [frontend, backend, cli, scripts, mobile]
+  priority: core
+  agents: [universal, codex]
+  repo_shapes: [app, library, cli, scripts, monorepo]
 ---
 
 # Implement
