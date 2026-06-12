@@ -37,6 +37,73 @@ func TestFromGoogleTaskRejectsInvalidDue(t *testing.T) {
 	}
 }
 
+func TestMatchingTaskListsIsCaseInsensitive(t *testing.T) {
+	lists := []TaskList{
+		{ID: "1", Title: "Inbox"},
+		{ID: "2", Title: "sTaN"},
+		{ID: "3", Title: "Work"},
+	}
+
+	matches := matchingTaskLists(lists, "Stan")
+	if len(matches) != 1 || matches[0].ID != "2" {
+		t.Fatalf("matchingTaskLists mismatch: %+v", matches)
+	}
+}
+
+func TestMatchingTaskListsReturnsAllCaseInsensitiveMatches(t *testing.T) {
+	lists := []TaskList{
+		{ID: "1", Title: "Stan"},
+		{ID: "2", Title: "stan"},
+	}
+
+	matches := matchingTaskLists(lists, "STAN")
+	if len(matches) != 2 {
+		t.Fatalf("matchingTaskLists count mismatch: %+v", matches)
+	}
+}
+
+func TestOrderTasksUsesHierarchyAndPosition(t *testing.T) {
+	items := []Task{
+		{ID: "child-2", Title: "Child 2", Parent: "parent", Position: "00000000000000000002"},
+		{ID: "root-2", Title: "Root 2", Position: "00000000000000000002"},
+		{ID: "child-1", Title: "Child 1", Parent: "parent", Position: "00000000000000000001"},
+		{ID: "parent", Title: "Parent", Position: "00000000000000000001"},
+	}
+
+	ordered := orderTasks(items)
+	got := make([]string, 0, len(ordered))
+	depths := make([]int, 0, len(ordered))
+	for _, item := range ordered {
+		got = append(got, item.ID)
+		depths = append(depths, item.Depth)
+	}
+
+	want := []string{"parent", "child-1", "child-2", "root-2"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("order mismatch: got %v want %v", got, want)
+		}
+	}
+	if depths[0] != 0 || depths[1] != 1 || depths[2] != 1 || depths[3] != 0 {
+		t.Fatalf("depth mismatch: %+v", ordered)
+	}
+}
+
+func TestOrderTasksTreatsMissingParentsAsRoots(t *testing.T) {
+	ordered := orderTasks([]Task{
+		{ID: "orphan", Title: "Orphan", Parent: "missing", Position: "2"},
+		{ID: "root", Title: "Root", Position: "1"},
+	})
+
+	got := []string{ordered[0].ID, ordered[1].ID}
+	want := []string{"root", "orphan"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("order mismatch: got %v want %v", got, want)
+		}
+	}
+}
+
 func TestWithRetryAndClassifyGoogleError(t *testing.T) {
 	attempts := 0
 	err := withRetry(func() error {

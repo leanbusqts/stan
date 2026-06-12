@@ -1,372 +1,272 @@
-# Stan CLI — Implementation Spec
+# SPEC
 
-## Review Workflow (IMPORTANT)
+This root `SPEC.md` describes the current product contract and technical behavior of `stan` itself. It is not the default place to draft a new feature spec or implementation plan; use `specs/spec.yml` for task-scoped planning work.
 
-This specification has been:
-- Reviewed by Grok and Gemini
-- Iterated across multiple versions
-- Refined for robustness, UX, and implementation clarity
+## 1. Project Identity
 
-This version includes:
-- Core MVP features
-- Robust OAuth handling
-- Advanced security (keychain + checksum)
-- CLI UX improvements (readable + scriptable output)
+- **Name:** `stan`
+- **Type:** local-first Go CLI
+- **Public command:** `stan`
+- **Primary purpose:** interact with Google Calendar and Google Tasks from a terminal with secure local OAuth storage and scriptable output
 
-It is considered **final and ready for implementation**.
+## 2. Product Summary
 
----
+Stan provides:
 
-# 1. Project Overview
+- Google OAuth login for Desktop App credentials
+- secure token persistence through keychain-first storage with file fallback
+- Google Calendar event listing and event creation
+- Google Tasks list discovery, task listing, and task creation
+- human-readable output by default
+- JSON and quiet output modes for scripts
 
-## Name
-Stan
+The product is intentionally small:
 
-## Description
-Stan is a local-first CLI tool that allows users to interact with Google Calendar and Google Tasks directly from the terminal.
+- no CLI framework
+- standard library routing and `flag` parsing
+- minimal Google API dependencies
+- local-only credential and token state
 
----
+## 3. Goals
 
-# 2. Technical Stack
+- Keep Calendar and Tasks workflows usable from the terminal.
+- Keep OAuth tokens out of logs and source files.
+- Prefer OS keychain storage and fall back to a permission-restricted token file.
+- Keep default output readable while preserving script-friendly modes.
+- Preserve Google Tasks ordering and hierarchy in task output.
+- Keep the command surface explicit and easy to test.
 
-## Language
-Go (>= 1.21)
+## 4. Non-Goals
 
-## Constraints
-- No CLI frameworks
-- Standard library preferred
-- Minimal dependencies
+- Full Google Workspace replacement.
+- Background sync or daemon behavior.
+- Cloud-hosted relay services.
+- Multi-account profile management.
+- Vendor-specific agent configuration.
+- Project generation or task planning beyond repository documentation.
 
-## Allowed Libraries
-- golang.org/x/oauth2
-- golang.org/x/oauth2/google
-- google.golang.org/api/calendar/v3
-- google.golang.org/api/tasks/v1
+## 5. Core Workflows
 
-## Optional (Security)
-- github.com/zalando/go-keyring
+### 5.1 Build
 
----
+Contributor command:
 
-# 3. Features (MVP)
-
-## Authentication
-- OAuth2 Authorization Code Flow
-- Desktop App credentials
-- PKCE (S256)
-- Local server + manual fallback
-- Token persistence
-- Automatic refresh
-- Auto-save on refresh
-- Revoked token detection (`invalid_grant`)
-- `stan auth status`
-- `stan auth logout`
-
----
-
-## Calendar
-- List events (default: next 7 days)
-- Create event
-- Filtering: --days, --start, --end
-- Duration: --duration
-
----
-
-## Tasks
-- List tasks
-- List task lists
-- Create task
-- Multi-list support (--list)
-- Due date (--due)
-- Notes (--notes)
-
----
-
-# 4. CLI Interface
-
+```bash
+go build -o stan .
 ```
 
+Expected outcome:
+
+- produce a local `stan` executable from the current checkout
+
+### 5.2 Authenticate
+
+Public commands:
+
+```bash
 stan auth login
 stan auth status
 stan auth logout
-
-stan calendar list --days 7
-stan calendar list --start 2026-03-20 --end 2026-03-25
-stan calendar add "Meeting" --when "10:00" --duration 30m
-
-stan tasks list
-stan tasks lists
-stan tasks add "Buy milk" --list "Personal" --due "2026-03-25"
-
-# Global flags
-
---json
--q
---no-color
-
 ```
 
----
+Expected behavior:
 
-# 5. CLI Parsing Strategy
+- load Google Desktop OAuth credentials from `./client_secret.json` or `~/.config/stan/client_secret.json`
+- start a local callback listener on `127.0.0.1` with a dynamic port
+- use OAuth Authorization Code Flow with PKCE S256
+- open the browser when possible
+- support manual redirect URL paste fallback
+- store tokens after a successful code exchange
+- report login state and access-token expiry through `auth status`
+- revoke the current token best-effort and remove local token state on logout
 
-- os.Args → command routing
-- flag package → per-command FlagSet
+OAuth scopes:
 
----
+- `https://www.googleapis.com/auth/calendar.events`
+- `https://www.googleapis.com/auth/tasks`
+- `openid`
+- `email`
 
-# 6. OAuth2 Authentication
+### 5.3 Token Storage
 
-- Desktop App credentials (mandatory)
-- Scopes:
-  - calendar.events
-  - tasks
-- Redirect:
-  - http://127.0.0.1:{port}
-- Dynamic port (port 0)
-- PKCE enabled
-- Fallback manual auth (paste URL)
+Storage priority:
 
----
+1. OS keychain
+2. `~/.config/stan/token.json`
 
-# 7. Token Management
+File fallback contract:
 
-## Storage priority
-1. Keychain (if available)
-2. File fallback
+- create `~/.config/stan` with `0700`
+- write token files with `0600`
+- write atomically through temporary file plus rename
+- persist schema version, email, token, and refresh-token checksum
 
-## File path
-~/.config/stan/token.json
+Refresh behavior:
 
-## Features
-- Atomic write (tmp + rename)
-- Schema versioning
-- Email stored
-- SHA256 checksum (refresh_token)
-- Auto-refresh + auto-save
+- API clients use an OAuth token source
+- refreshed access tokens are saved automatically
+- missing refresh tokens retain the previously stored refresh token when possible
+- `invalid_grant`, `400`, and `401` auth failures map to the user-facing expired-session message
 
----
+### 5.4 Calendar
 
-# 8. Calendar Integration
+Public commands:
 
-## Default behavior
-- Range: now → +7 days
-- Calendar: primary
+```bash
+stan calendar list [--days N] [--start YYYY-MM-DD] [--end YYYY-MM-DD]
+stan calendar add "Meeting" --when "10:00" [--duration 30m] [--end 2026-03-20T10:30]
+```
 
-## Add event
-- title
-- when
-- duration OR end
-- Validation: end > start
+Expected behavior:
 
----
+- list events from the primary calendar
+- default list range is now through seven days ahead
+- support explicit `--start` and `--end`
+- create events with a title, start, and either duration or explicit end
+- reject invalid ranges where end is not after start
 
-# 9. Tasks Integration
+Supported date/time input:
 
-## Features
-- list tasks
-- list lists
-- add task
-- multi-list support
-
----
-
-# 10. Date Handling
-
-Supported:
 - RFC3339
 - date-only
-- time-only
+- time-only interpreted in the local timezone
 
-Implementation:
-- time.ParseInLocation
+### 5.5 Tasks
 
----
+Public commands:
 
-# 11. Output System (UI / Visualization)
-
-## Philosophy
-
-Stan output must be:
-
-- Human-readable by default
-- Machine-readable when needed
-- Predictable and consistent
-- Minimal but expressive
-
----
-
-## Output Modes
-
-### 1. Default (Human-readable)
-
-- Grouped logically (e.g. by day)
-- Aligned columns
-- Icons for context
-- Optional color
-
----
-
-### 2. JSON Mode
-
+```bash
+stan tasks list
+stan tasks lists
+stan tasks add "Buy milk" [--list Personal] [--due 2026-03-25] [--notes "..."]
 ```
 
---json
+Default list behavior:
 
-```
+- `tasks list` uses a Google Tasks list titled `Stan`
+- `tasks add` without `--list` also uses `Stan`
+- matching is case-insensitive
+- duplicate case-insensitive matches are rejected as ambiguous
 
-- Raw structured output
-- No formatting
-- Designed for piping (`jq`, scripts)
+Task listing behavior:
 
----
+- load all available result pages
+- preserve Google Tasks sibling order through the `position` field
+- preserve hierarchy through the `parent` field
+- print subtasks under their parent with indentation in human-readable output
+- treat tasks with missing parents as top-level tasks
 
-### 3. Quiet Mode
+Task creation behavior:
 
-```
+- create in the default `Stan` list unless `--list` is supplied
+- support optional due date
+- support optional notes
 
--q
+## 6. Public Command Surface
 
-```
+Supported user-facing commands:
 
-- Minimal output
-- Only essential values (titles or IDs)
+- `stan auth login`
+- `stan auth status`
+- `stan auth logout`
+- `stan calendar list`
+- `stan calendar add`
+- `stan tasks list`
+- `stan tasks lists`
+- `stan tasks add`
 
----
+Supported global flags:
 
-## Global Flags
+- `--json`
+- `-q`
+- `--no-color`
 
-- --json
-- -q
-- --no-color
+Command constraints:
 
----
+- `--json` and `-q` are mutually exclusive
+- unknown commands fail with a clear error
+- command-specific positional arguments are validated explicitly
 
-## Calendar Output Format
+## 7. Output Contract
 
-Example:
+Default output:
 
-```
+- concise human-readable text
+- Calendar events grouped by day label
+- Tasks headed by `Tasks (Stan)`
+- task completion state shown as `[ ]` or `[x]`
+- subtasks indented by hierarchy depth
+- optional ANSI colors for calendar/task urgency and status
 
-📅 Today
-10:00  Meeting
-14:30  Call
+JSON output:
 
-📅 Tomorrow
-09:00  Gym
+- structured command results
+- no decorative formatting
+- suitable for piping to tools such as `jq`
 
-📅 Next Days
-Fri 11:00 Dentist
+Quiet output:
 
-```
+- compact essential values
+- one item per line where applicable
 
----
+## 8. Error Contract
 
-## Tasks Output Format
+Auth-expired message:
 
-Example:
-
-```
-
-Tasks (@default)
-
-[ ] Buy milk
-[ ] Call mom
-[x] Pay bills
-
-```
-
----
-
-## Visual Enhancements
-
-### Icons
-
-- 📅 → calendar
-- [ ] → pending task
-- [x] → completed task
-- ⚠️ → near due
-- 🔥 → urgent
-- ⏳ → upcoming
-
----
-
-### ANSI Colors
-
-(No external libraries)
-
-Use:
-
-- Red → overdue
-- Green → today / completed
-- Yellow → upcoming
-
-Disable via:
-```
-
---no-color
-
-```
-
----
-
-## Formatting Rules
-
-- Fixed spacing for columns
-- Consistent indentation
-- No random line breaks
-- Deterministic output order
-
----
-
-# 12. Error Handling
-
-- Clear, human-readable messages
-- No stack traces
-
-Special case:
-
-```
-
+```text
 Session expired or revoked.
 Run: stan auth login
-
 ```
 
----
+Other errors should be:
 
-# 13. UX Enhancements
+- direct
+- user-readable
+- free of stack traces
+- free of OAuth secrets, access tokens, refresh tokens, and credential payloads
 
-- Headless detection → skip browser
-- Manual auth fallback
-- Onboarding instructions
-- Direct Google Cloud Console link
+## 9. Repository Structure Contract
 
----
+- `auth/` - OAuth login, status, logout, token refresh client
+- `calendar/` - Google Calendar integration and calendar option parsing
+- `internal/` - config, output formatting, keychain integration, token store
+- `tasks/` - Google Tasks integration and task ordering
+- `rules/` - repository security rules for agents
+- `specs/` - optional task-scoped planning area
+- `main.go` - CLI routing and human output
+- `README.md` - entrypoint and usage guide
+- `RUNBOOK.md` - operational guide
+- `SNAPSHOT.md` - current repository snapshot
+- `CHANGELOG.md` - release history
+- `VERSION` - current release version
 
-# 14. Robustness
+## 10. Security Contract
 
-- Silent retry (1–2 attempts)
-- Simple exponential backoff
-- Auth timeout (~30s)
+- Never commit `client_secret.json`.
+- Never print OAuth access tokens or refresh tokens.
+- Never hardcode credentials.
+- Keep refresh tokens in keychain when available.
+- Use strict local file permissions for token fallback.
+- Validate untrusted command input before use.
+- Avoid unsafe shell command construction.
 
----
+## 11. Verification Contract
 
-# 15. Definition of Done
+Primary checks:
 
-- Auth works (both modes)
-- Token stored securely
-- Auto-refresh works
-- Calendar + Tasks fully usable
-- Output readable + JSON compatible
-- No crashes in normal usage
+```bash
+go test ./...
+go build -o stan .
+```
 
----
+Known local workaround:
 
-# FINAL STATUS
+```bash
+GOCACHE=/private/tmp/stan-gocache go test ./...
+GOCACHE=/private/tmp/stan-gocache go build -o stan .
+```
 
-- Fully reviewed
-- Hardened
-- UX-aware
-- Security-aware
-- Ready for implementation
+## 12. Current Release
+
+- Version: `0.1.0`
+- Release date: 2026-06-12

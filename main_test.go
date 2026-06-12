@@ -45,10 +45,10 @@ func TestPrintCalendarEventsAndTasks(t *testing.T) {
 	tasksOut := captureStdout(t, func() {
 		printTasks([]tasks.Task{
 			{ID: "tsk-1", Title: "Buy milk"},
-			{ID: "tsk-2", Title: "Pay bills", Completed: true},
-		}, "@default", internal.OutputOptions{NoColor: true})
+			{ID: "tsk-2", Title: "Pay bills", Completed: true, Depth: 1},
+		}, tasks.DefaultListTitle, internal.OutputOptions{NoColor: true})
 	})
-	if !strings.Contains(tasksOut, "Tasks (@default)") || !strings.Contains(tasksOut, "[x] Pay bills") {
+	if !strings.Contains(tasksOut, "Tasks (Stan)") || !strings.Contains(tasksOut, "  [x] Pay bills") {
 		t.Fatalf("tasks output mismatch: %q", tasksOut)
 	}
 }

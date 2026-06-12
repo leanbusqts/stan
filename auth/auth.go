@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -72,14 +71,7 @@ func (m *Manager) Login(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("generate PKCE verifier: %w", err)
 	}
-	challenge := pkceChallenge(verifier)
-
-	authURL := conf.AuthCodeURL(
-		state,
-		oauth2.AccessTypeOffline,
-		oauth2.S256ChallengeOption(challenge),
-		oauth2.SetAuthURLParam("prompt", "consent"),
-	)
+	authURL := buildAuthCodeURL(conf, state, verifier)
 
 	codeCh := make(chan string, 1)
 	errCh := make(chan error, 1)
@@ -299,9 +291,13 @@ func randomURLSafe(size int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-func pkceChallenge(verifier string) string {
-	sum := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
+func buildAuthCodeURL(conf *oauth2.Config, state string, verifier string) string {
+	return conf.AuthCodeURL(
+		state,
+		oauth2.AccessTypeOffline,
+		oauth2.S256ChallengeOption(verifier),
+		oauth2.SetAuthURLParam("prompt", "consent"),
+	)
 }
 
 func fetchEmail(ctx context.Context, accessToken string) (string, error) {

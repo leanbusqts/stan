@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"stan/auth"
@@ -201,7 +202,7 @@ func runTasks(ctx context.Context, mgr *auth.Manager, args []string, output inte
 		if output.JSON {
 			return internal.PrintJSON(os.Stdout, items)
 		}
-		printTasks(items, "@default", output)
+		printTasks(items, tasks.DefaultListTitle, output)
 		return nil
 	case "lists":
 		client, err := mgr.AuthorizedHTTPClient(ctx)
@@ -335,7 +336,8 @@ func printTasks(items []tasks.Task, listName string, output internal.OutputOptio
 		if item.Completed {
 			checkbox = "[x]"
 		}
-		line := fmt.Sprintf("%s %s", checkbox, item.Title)
+		indent := strings.Repeat("  ", item.Depth)
+		line := fmt.Sprintf("%s%s %s", indent, checkbox, item.Title)
 		fmt.Fprintln(os.Stdout, internal.TaskLineColor(!output.NoColor, item.Completed, item.Due, now, line))
 	}
 	if len(items) == 0 {
