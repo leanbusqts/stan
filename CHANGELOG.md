@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## [Unreleased]
+
+## [0.1.3] - 2026-06-25
 ### Added
 - Added `install.sh` to build and install `stan` as a global command.
 
