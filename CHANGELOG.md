@@ -1,6 +1,11 @@
 # CHANGELOG
 
 ## [Unreleased]
+### Added
+- Added `install.sh` to build and install `stan` as a global command.
+
+### Changed
+- Updated source onboarding to use `./install.sh` as the primary path.
 
 ## [0.1.2] - 2026-06-12
 ### Added

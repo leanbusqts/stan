@@ -9,6 +9,7 @@
 ## 2. Current Status
 
 - **Runtime:** single Go CLI entrypoint in `main.go`, with embedded version reporting
+- **Installer:** `install.sh` builds and installs `stan` globally, defaulting to `~/bin/stan`
 - **Parsing:** standard library `flag` with command-specific `FlagSet` routing
 - **Authentication:** OAuth Authorization Code Flow with local callback, PKCE S256, browser launch, and manual redirect fallback
 - **Token storage:** keychain-first storage with `~/.config/stan/token.json` fallback
@@ -25,6 +26,7 @@
 - `stan auth login`
 - `stan auth status`
 - `stan auth logout`
+- `./install.sh [--bin-dir DIR] [--prefix DIR] [--dry-run]`
 - `stan version`
 - `stan doctor`
 - `stan help`

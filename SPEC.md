@@ -13,6 +13,7 @@ This root `SPEC.md` describes the current product contract and technical behavio
 
 Stan provides:
 
+- source checkout installation through `install.sh`
 - embedded version reporting
 - local diagnostic checks
 - Google OAuth login for Desktop App credentials
@@ -61,7 +62,24 @@ Expected outcome:
 
 - produce a local `stan` executable from the current checkout
 
-### 5.2 Utility commands
+### 5.2 Install
+
+Public command:
+
+```bash
+./install.sh [--bin-dir DIR] [--prefix DIR] [--dry-run]
+```
+
+Expected behavior:
+
+- build the CLI from the current checkout
+- install it as `stan` under `~/bin` by default
+- support explicit install destinations
+- warn when the target bin directory is not in `PATH`
+- print OAuth credential setup instructions when credentials are missing
+- never create or download Google OAuth credentials automatically
+
+### 5.3 Utility commands
 
 Public commands:
 
@@ -77,7 +95,7 @@ Expected behavior:
 - `doctor` reports version, credentials state, config directory state, and local token state without calling Google APIs
 - `help` prints the root command surface
 
-### 5.3 Authenticate
+### 5.4 Authenticate
 
 Public commands:
 
@@ -105,7 +123,7 @@ OAuth scopes:
 - `openid`
 - `email`
 
-### 5.4 Token Storage
+### 5.5 Token Storage
 
 Storage priority:
 
@@ -126,7 +144,7 @@ Refresh behavior:
 - missing refresh tokens retain the previously stored refresh token when possible
 - `invalid_grant`, `400`, and `401` auth failures map to the user-facing expired-session message
 
-### 5.5 Calendar
+### 5.6 Calendar
 
 Public commands:
 
@@ -149,7 +167,7 @@ Supported date/time input:
 - date-only
 - time-only interpreted in the local timezone
 
-### 5.6 Tasks
+### 5.7 Tasks
 
 Public commands:
 
@@ -195,6 +213,7 @@ Task creation behavior:
 
 Supported user-facing commands:
 
+- `./install.sh`
 - `stan version`
 - `stan doctor`
 - `stan help`

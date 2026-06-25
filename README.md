@@ -17,8 +17,8 @@ Clone and build from this repository:
 ```bash
 git clone https://github.com/leanbusqts/stan.git
 cd stan
-go build -o stan .
-./stan help
+./install.sh
+stan help
 ```
 
 Create Google OAuth credentials:
@@ -37,15 +37,15 @@ mv ~/Downloads/client_secret*.json ~/.config/stan/client_secret.json
 Then log in:
 
 ```bash
-./stan auth login
-./stan auth status
+stan auth login
+stan auth status
 ```
 
 Check local setup:
 
 ```bash
-./stan version
-./stan doctor
+stan version
+stan doctor
 ```
 
 Stan also supports keeping credentials in the repository working directory for local experiments:
@@ -59,13 +59,13 @@ Do not commit `client_secret.json`.
 List tasks from the default Stan task list:
 
 ```bash
-./stan tasks list
+stan tasks list
 ```
 
 List upcoming calendar events:
 
 ```bash
-./stan calendar list
+stan calendar list
 ```
 
 ## Quickstart For Existing Checkouts
@@ -77,6 +77,14 @@ go build -o stan .
 ./stan help
 ./stan doctor
 ```
+
+To install the command globally from an existing checkout:
+
+```bash
+./install.sh
+```
+
+The installer writes `stan` to `~/bin/stan` by default. Use `--bin-dir DIR` or `--prefix DIR` to choose another location.
 
 ## Google OAuth Setup
 

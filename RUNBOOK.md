@@ -4,6 +4,19 @@
 
 ## Build
 
+Install the global CLI:
+
+```bash
+./install.sh
+```
+
+By default this writes `stan` to `~/bin/stan`. Override the target with:
+
+```bash
+./install.sh --bin-dir /path/to/bin
+./install.sh --prefix /path/to/prefix
+```
+
 Build the local CLI:
 
 ```bash
